@@ -1,0 +1,152 @@
+using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Crime_Analyzer
+{
+    class CrimeStats
+    {
+        public int Year;
+        public int Population;
+        public int VC;
+        public int Murder;
+        public int Rape;
+        public int Robbery;
+        public int AA;
+        public int PC;
+        public int Burglary;
+        public int Theft;
+        public int MVT;
+    }
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            try
+            {
+                List<CrimeStats> CrimeStatList = new List<CrimeStats>();
+                FileInfo fi;
+                fi = new FileInfo(args[0]);
+                if (!fi.Exists)
+                {
+                    Console.WriteLine("File not found.  Try again.");
+                }
+                else
+                {
+                    fi = null;
+                    DirectoryInfo DI;
+                    DI = new DirectoryInfo(args[1]);
+                    if (!DI.Exists)
+                        Console.WriteLine("Report path not found. Try again.");
+                    else
+                    {
+                        DI = null;
+                        StreamReader reader = new StreamReader(args[0]);
+                        string line;
+                        string[] values;
+                        line = reader.ReadLine(); //throw away headers
+                        do
+                        {
+                            line = reader.ReadLine();
+                            values = line.Split(',');
+                            if (values.Length != 11)
+                                Console.WriteLine("Not enough arguments found.");
+                            else
+                            {
+                                try {
+                                CrimeStats c = new CrimeStats();
+                                c.Year = Int32.Parse(values[0]);
+                                c.Population = Int32.Parse(values[1]);
+                                c.VC = Int32.Parse(values[2]);
+                                c.Murder = Int32.Parse(values[3]);
+                                c.Rape = Int32.Parse(values[4]);
+                                c.Robbery = Int32.Parse(values[5]);
+                                c.AA = Int32.Parse(values[6]);
+                                c.PC = Int32.Parse(values[7]);
+                                c.Burglary = Int32.Parse(values[8]);
+                                c.Theft = Int32.Parse(values[9]);
+                                c.MVT = Int32.Parse(values[10]);
+                                CrimeStatList.Add(c);
+                            }
+                                catch(Exception e)
+                                {
+                                    Console.WriteLine("Data format error.  " + e.ToString());
+                                }
+                            }
+                        }
+                        while (!reader.EndOfStream);
+                        reader.Close();
+                        StreamWriter sw = new StreamWriter(args[1] + "\\CrimeReport.txt");
+
+                        sw.WriteLine("Crime Analyzer Report");
+                        sw.WriteLine();
+                        var years = from CrimeStats in CrimeStatList select CrimeStats.Year;
+                        sw.Write("Period:  " + years.Min() + "-" + years.Max());
+                        sw.WriteLine(" (" + years.Count() + " years)");
+                        var Myears = from CrimeStats in CrimeStatList where CrimeStats.Murder < 15000 select CrimeStats.Year;
+                        sw.WriteLine();
+                        sw.Write("Years murders per year <15000: ");
+                        foreach (var Myr in Myears)
+                        {
+                            sw.Write(Myr);
+                            if (Myr != Myears.Last())
+                                sw.Write(", ");
+                        }
+                        sw.WriteLine();
+                        var Robbery = from CrimeStats in CrimeStatList where CrimeStats.Robbery > 500000 select new { CrimeStats.Year, CrimeStats.Robbery };
+                        sw.Write("Robberies per year > 500000: ");
+                        foreach (var rob in Robbery)
+                        {
+                            sw.Write(rob.Year + " = " + rob.Robbery);
+                            if (rob.Year != Robbery.Last().Year)
+                                sw.Write(", ");
+                        }
+                        sw.WriteLine();
+                        var vc = from CrimeStats in CrimeStatList where CrimeStats.Year == 2010 select CrimeStats.VC;
+                        var pop = from CrimeStats in CrimeStatList where CrimeStats.Year == 2010 select CrimeStats.Population;
+                        var capita = (float)vc.First() / (float)pop.First();
+                        sw.WriteLine("Violent Crime per capita rate (2010): " + capita);
+
+                        var murd = from CrimeStats in CrimeStatList select CrimeStats.Murder;
+                        sw.WriteLine("Average murder per year (all years): " + murd.Average());
+
+                        var avmurd = from CrimeStats in CrimeStatList where CrimeStats.Year > 1993 && CrimeStats.Year < 1998 select CrimeStats.Murder;
+                        sw.WriteLine("Average murder per year (1994-1997): " + avmurd.Average());
+
+                        var avmurd2 = from CrimeStats in CrimeStatList where CrimeStats.Year > 2009 && CrimeStats.Year < 2014 select CrimeStats.Murder;
+                        sw.WriteLine("Average murder per year (2010-2013): " + avmurd2.Average());
+
+                        var numtheft = from CrimeStats in CrimeStatList where CrimeStats.Year > 1998 && CrimeStats.Year < 2005 select CrimeStats.Theft;
+                        sw.WriteLine("Minimum thefts per year (1999-2004): " + numtheft.Min());
+                        sw.WriteLine("Maximum thefts per year (1999-2004): " + numtheft.Max());
+
+                        var mvt = from CrimeStats in CrimeStatList where CrimeStats.MVT > 0 select new { CrimeStats.Year, CrimeStats.MVT };
+                        sw.Write("Year of highest number of motor vehicle thefts: ");
+                        Int32 highmvt = 0;
+                        Int32 highyr = 0;
+                        foreach (var findmvt in mvt)
+                        {
+                            if (findmvt.MVT > highmvt)
+                            {
+                                highmvt = findmvt.MVT;
+                                highyr = findmvt.Year;
+                            }
+                        }
+                        sw.WriteLine(highyr);
+
+                        sw.Flush();
+                        sw.Close();
+                    }
+                }
+
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Exception[0]: " + e.ToString());
+            }
+        }
+    }
+}
